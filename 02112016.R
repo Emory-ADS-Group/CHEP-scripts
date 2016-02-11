@@ -2,6 +2,7 @@ source("functions.r")
 
 Events <- read.csv("~/Downloads/locations/Events.csv")
 
+
 assetID <- unique(Events[[2]])
 
 assetIDscram <- sample(assetID)
@@ -12,7 +13,10 @@ assetIDscram <- sample(assetID)
 #!is.na() returns true when it's an asset id we want to select
 #wh give us the row we want to select
 
-wh <- !is.na(match(Events$assetID, assetIDscram[1:2000]))
+
+ptm <- proc.time()
+
+wh <- !is.na(match(Events$assetID, assetIDscram[4194:12257]))
 
 FirstSample <- Events[wh,]
 
@@ -36,57 +40,59 @@ for (x in 1:numRecord) {
   tmpSpace <- !is.na(match(FirstSample$assetID, assetRecord[x]))  
   tmpSample <- FirstSample[tmpSpace,]
   
-  #units of distout is metre
-  
-  #monkey <- distm(cbind(tmpSample[,12],tmpSample[,11]), fun=distHaversine)
-  #distout <- as.dist(monkey)
-  
-  distout <- as.dist(distm(cbind(tmpSample[,12],tmpSample[,11]), fun=distHaversine))
-  
-  out1 <- hclust(distout)
-  # Step backwards through cuts from n to 1 until max cluster distance is too big
-  #
-  
-  
-  # Set the asset cluster radius in meters
-  assetCRad <- 1000.0
-  
-  # Find the number of rows that we need to cycle through
-  n <- nrow(tmpSample)  #finish this line of code
-  upperBound <- n
-  lowerBound <- 1
-  
-  oldUpper <- upperBound
-  oldLower <- lowerBound
-  
-  
-  maxDist <- 0
-  
-  while (!foundSolution) {
+  if (nrow(tmpSample) >= 2) {
     
-    if ((upperBound - lowerBound) == 1) {
-      criticalCut <- medBound
-      break
+    #units of distout is metre
+    
+    distout <- as.dist(distm(cbind(tmpSample[,12],tmpSample[,11]), fun=distHaversine))
+    
+    out1 <- hclust(distout)
+    # Step backwards through cuts from n to 1 until max cluster distance is too big
+    #
+    
+    
+    # Set the asset cluster radius in meters
+    assetCRad <- 1000.0
+    
+    # Find the number of rows that we need to cycle through
+    n <- nrow(tmpSample)  #finish this line of code
+    upperBound <- n
+    lowerBound <- 1
+    
+    oldUpper <- upperBound
+    oldLower <- lowerBound
+    
+    
+    maxDist <- 0
+    
+    while (!foundSolution) {
+      
+      if ((upperBound - lowerBound) == 1) {
+        criticalCut <- medBound
+        break
+      }
+      
+      medBound = as.integer(round(0.5 * (upperBound + lowerBound)))
+      
+      maxDist <- calcMax(out1, tmpSample, medBound)
+      
+      if (maxDist >= assetCRad) {
+        lowerBound <- medBound
+      } else if (maxDist < assetCRad) {
+        upperBound <- medBound
+      }
+      
+      criticalCut <- medBound + 1
+      
+      
+      cent <- calcCent(out1, criticalCut, tmpSample)
+      
     }
     
-    medBound = as.integer(round(0.5 * (upperBound + lowerBound)))
+    finalOut <- c(finalOut, cent)
     
-    maxDist <- calcMax(out1, tmpSample, medBound)
-    
-    if (maxDist >= assetCRad) {
-      lowerBound <- medBound
-    } else if (maxDist < assetCRad) {
-      upperBound <- medBound
-    }
-    
-    criticalCut <- medBound + 1
-    
-    
-    cent <- calcCent(out1, criticalCut, tmpSample)
-
   }
-  
-  finalOut <- c(finalOut, cent)
-  
 }
+proc.time() - ptm
+save(finalOut, file = "4194to12257.rda", compress = "xz")
 

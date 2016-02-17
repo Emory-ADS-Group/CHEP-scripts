@@ -10,7 +10,7 @@ calcMax <- function(out1, tmpSample, numGroup) {
     wh <- out2 == j #assumes vector order doesn't change
     if (sum(wh) < 1) stop("No ping in this cluster")
     
-    tmpCoord <- cbind(tmpSample[wh,12],tmpSample[wh,11])
+    tmpCoord <- cbind(tmpSample[wh,2],tmpSample[wh,1])
     dst <- max(distm((tmpCoord), fun=distHaversine))
     
     
@@ -31,10 +31,63 @@ calcCent <- function(out1, criticalCut, tmpSample) {
   for (i in 1:criticalCut) {
     wh <- out3 == i
     if (sum(wh) > 1){
-      cent[i] <- list(c(mean(tmpSample[wh,11]),mean(tmpSample[wh,12])))
+      cent[i] <- list(c(mean(tmpSample[wh,1]),mean(tmpSample[wh,2]), as.integer(sum(wh))))
     } 
   }
   
   return(cent)
   
 }
+
+
+
+Cluster <- function(criticalDist, tmpSample, out1) {
+  
+  # Find the number of rows that we need to cycle through
+  n <- nrow(tmpSample)  #finish this line of code
+  upperBound <- n
+  lowerBound <- 1
+  
+  oldUpper <- upperBound
+  oldLower <- lowerBound
+  
+  foundSolution <- FALSE
+  
+  maxDist <- 0
+  
+  #criticalDist <- 500.0
+  
+  
+  while (!foundSolution) {
+    
+    if ((upperBound - lowerBound) == 1) {
+      criticalCut <- medBound
+      break
+    }
+    
+    medBound = as.integer(round(0.5 * (upperBound + lowerBound)))
+    
+    maxDist <- calcMax(out1, tmpSample, medBound)
+    
+    if (maxDist >= criticalDist) {
+      lowerBound <- medBound
+    } else if (maxDist < criticalDist) {
+      upperBound <- medBound
+    }
+    
+    criticalCut <- medBound + 1
+    
+    
+    cent <- calcCent(out1, criticalCut, tmpSample)
+  }
+  
+  return(cent)
+  
+}
+
+
+##########  Convert to Dataframe   ###############
+
+
+
+

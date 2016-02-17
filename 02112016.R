@@ -16,7 +16,7 @@ assetIDscram <- sample(assetID)
 
 ptm <- proc.time()
 
-wh <- !is.na(match(Events$assetID, assetIDscram[4194:12257]))
+wh <- !is.na(match(Events$assetID, assetIDscram[1:5]))
 
 FirstSample <- Events[wh,]
 
@@ -62,6 +62,7 @@ for (x in 1:numRecord) {
     oldUpper <- upperBound
     oldLower <- lowerBound
     
+    foundSolution <- FALSE
     
     maxDist <- 0
     

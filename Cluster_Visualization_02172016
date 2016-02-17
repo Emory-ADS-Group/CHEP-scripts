@@ -1,0 +1,43 @@
+library(ggmap)
+library(ggplot2)
+library(RgoogleMaps)
+
+
+Events <- read.csv("C:/Users/Deepti/Documents/Proj/clust1.csv", 
+                   header=TRUE, 
+                   stringsAsFactors=T, 
+                   strip.white=TRUE, 
+                   na.strings=c("NA", "na","nan", "inf", "", "."))
+Latitude <- Events[[2]] 
+Longitude <- Events[[3]] 
+
+colnames(Events)[2] <- "lat"
+colnames(Events)[3] <- "lon"
+
+###########ADD OUR DATA###########################
+#want to make a data frame of just points and their visualizations
+Events$size <- "Small"
+Events$col <- "darkred"
+Events$char <- ""
+
+mymarkers <- cbind.data.frame(Events$lat, Events$lon, Events$size, Events$col, Events$char)
+names(mymarkers) <- c("lat", "lon", "size", "col", "char")
+
+###########PLOT OUR DATA###########################
+
+center = c(mean(Latitude), mean(Longitude))  #tell what point to center on
+zoom <- 4  #zoom: 1 = furthest out (entire globe), larger numbers = closer in
+
+terrfar <- GetMap.bbox(
+  lonR= range(Longitude),
+  latR= range(Latitude),
+  center = center,
+  destfile= "terrfar.png",
+  markers= mymarkers,
+  zoom=zoom,
+  maptype="mapmaker-hybrid")
+
+
+#terrmap <- GetMap(center=center, zoom=zoom, maptype= "mapmaker-hybrid", destfile = "Locations.png")
+#terr <- ggmap(terrmap)
+#ggmap(terrmap, extent = "device", ylab = "Latitude", xlab = "Longitude")

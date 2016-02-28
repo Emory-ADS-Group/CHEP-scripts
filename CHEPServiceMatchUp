@@ -1,0 +1,51 @@
+  #Prepration: Load geosphere package, load findMatch.r file with following syntax:
+  
+  #source("findMatch.r")
+  
+  #clean up the locations.cvs 
+  CHEPServiceDF<- data.frame(CHEPServiceCenter,stringsAsFactors=F)
+  data2 <-unique.matrix(CHEPServiceDF[c("latitude","longitude")])
+  
+  sum(is.na(geoClustFinal))
+  
+  sum(is.na(data2))
+  NewRoundLocation <- na.omit(data2)
+  colnames(NewRoundLocation)<-c("V1","V2") 
+  NewLocations  <- data.frame()
+  NewLocations <- matrix(ncol=6,nrow=0)
+  Outlist <- list()
+  
+  # 1. Declares the locationDB file  and for loop to identify 
+  
+  locationDB <- geoClustFinal
+  
+  #for (i in 1:nrow(NewRoundLocation)){
+  for (i in 1:nrow(NewRoundLocation)){
+    locationUniq <- data.frame()
+    locationUniq <- NewRoundLocation[i,]
+    locationMatch <- findMatch(locationUniq, locationDB, 5000.0)
+    if (is.na(locationMatch[1])){
+      Outlist[i] <- NA 
+      names(Outlist[i])<-CHEPServiceDF$name[i]
+    }
+    else {
+    FinalIndex <- locationMatch[,1]
+    AddLocations <- matrix(nrow=length(FinalIndex),ncol=6)
+   
+    ReturnLoc <- locationDB [FinalIndex,]
+    AddLocations[,1]<-as.character( CHEPServiceDF$name[i])
+    AddLocations[,2]<- CHEPServiceDF$latitude[i]
+    AddLocations[,3]<- CHEPServiceDF$longitude[i]
+    AddLocations[,4]<- FinalIndex
+    AddLocations[,5]<-ReturnLoc$V1
+    AddLocations[,6]<-ReturnLoc$V2
+    
+    NewLocations <- rbind(NewLocations,AddLocations)
+    Outlist[i] <-list(AddLocations)
+    names(Outlist[i])<-CHEPServiceDF$name[i]
+    }
+}
+  
+  
+  
+  

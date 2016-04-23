@@ -1,47 +1,52 @@
 library(dplyr)
 #load("RE.rda")
 
-#function to take cluster ids and return dataframe of number of trips
 source("MappingSupportFunctions.r")
 ###function takes the cluster centroids as c(lat,long) and returns dataframe with trips
 return_Trips<-function(centroid1,centroid2){
-###Load the cluster centroid - will be from master cluster list using loop
-#location1<-locations[locations$locationID == "USKZ",] #Atlanta service center - "USKZ"
-#centroid1<- centroid1
-
-#location2<-locations[locations$locationID ==6100100465,] #6100100465 - krogger
-#centroid2<- c(location2$latitude,location2$longitude)
 
 ##use whInCircle function to subset the pings that have been at both clusters
-whCircle1<- WhInCircle(1500,centroid1,ReducedEvents)
-whCircle2<- WhInCircle(1500,centroid2,ReducedEvents)
+whCircle1<- WhInCircle(centroid1,1500,ReducedEvents)
+whCircle2<- WhInCircle(centroid2,1500,ReducedEvents)
 
 whCircle<- whCircle1
 whCircle[whCircle2]<-TRUE
 
-combined_assets<- ReducedEvents[whCircle,]
-
 #get only the pings between clusters and with type 3 and 4
 cluster1_Assets <- ReducedEvents[whCircle1,]
 cluster2_Assets <- ReducedEvents[whCircle2,]
-#cluster1_Assets <- cluster1_Assets[cluster1_Assets$type == 3 |cluster1_Assets$type == 4,]
-#cluster2_Assets <- cluster2_Assets[cluster2_Assets$type == 3 |cluster2_Assets$type == 4,]
 
+
+#check if two centres are within 1500 metres. If yes, then identify the pings that are within 1500 meteres
+#of both the locations and reassign them to the closest location
+if(HVDist(centroid1,centroid2)<=1.5){
+  overlap<-semi_join(cluster1_Assets,cluster2_Assets,by = "id")
+  for(j in 1:nrow(overlap)){
+    dist_from_clust1<-HVDist(centroid1,c(overlap[j,]$latitude,overlap[j,]$longitude))
+    dist_from_clust2<-HVDist(centroid2,c(overlap[j,]$latitude,overlap[j,]$longitude))
+    if(dist_from_clust1>dist_from_clust2){
+      cluster1_Assets<-cluster1_Assets[!(cluster1_Assets$id == overlap[j,]$id),]
+    }else{
+      cluster2_Assets<-cluster2_Assets[!(cluster2_Assets$id == overlap[j,]$id),]
+    }
+  }
+}
+
+
+cluster1_Assets$cluster<-1
+cluster2_Assets$cluster<-2
 #order pings according to date time from oldest to latest
 cluster1_Assets<- cluster1_Assets[order(cluster1_Assets$datetime),]
 cluster2_Assets<- cluster2_Assets[order(cluster2_Assets$datetime),]
-cluster1_Assets$cluster<-1
-cluster2_Assets$cluster<-2
 
 #Fetch assets that have been to both sites
 common_assets <- unique((semi_join(cluster1_Assets,cluster2_Assets,by = "assetID"))$assetID)
-#common_id <- unique((semi_join(cluster1_Assets,cluster2_Assets,by = "assetID"))$id)
 
 #combine the pings
 combined_pings<- rbind(cluster1_Assets,cluster2_Assets)
 
 #dataframe to store trip details
-trips = data.frame(trip_id=NA,start_id = NA, end_id = NA,assetID=NA, start_lat=NA,start_lon=NA,end_lat=NA,end_lon=NA,start_time="",end_time="")
+trips<-data.frame(trip_id=NA,start_id = NA, end_id = NA,assetID=NA, start_lat=NA,start_lon=NA,end_lat=NA,end_lon=NA,start_time="",end_time="")
 trips$start_time = as.character(trips$start_time)
 trips$end_time = as.character(trips$end_time)
 trips$distance = NA
